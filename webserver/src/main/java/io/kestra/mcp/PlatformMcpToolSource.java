@@ -17,7 +17,7 @@ import io.kestra.core.utils.ListUtils;
 import io.kestra.webserver.services.ai.agent.AgentCallContext;
 import io.kestra.webserver.services.ai.agent.AgentPrincipalResolver;
 import io.kestra.webserver.services.ai.agent.tool.AgentToolPermissionEvaluator;
-import io.kestra.webserver.services.ai.agent.tool.McpPlatformTool;
+import io.kestra.webserver.services.ai.agent.tool.McpExposedTool;
 import io.kestra.webserver.services.ai.agent.tool.ToolCatalog;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
@@ -34,7 +34,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 /**
- * The {@link McpToolSource.Kind#PLATFORM} tool source: exposes every {@link McpPlatformTool} of the
+ * The {@link McpToolSource.Kind#PLATFORM} tool source: exposes every {@link McpExposedTool} of the
  * {@link ToolCatalog} across tenants, with an extra {@value #TENANT_ARGUMENT} argument naming the tenant a call
  * acts on.
  * <p>
@@ -82,7 +82,7 @@ public class PlatformMcpToolSource implements McpToolSource {
         tenants.forEach(tenant -> principals.put(tenant, principalResolver.resolve(context.getUserId(), tenant)));
 
         List<ToolCatalog.ToolEntry> allowed = toolCatalog.entries().stream()
-            .filter(entry -> entry.tool() instanceof McpPlatformTool)
+            .filter(entry -> entry.tool() instanceof McpExposedTool)
             .filter(entry -> tenants.stream().anyMatch(tenant -> permissionEvaluator.isAllowed(entry, tenant, principals.get(tenant))))
             .sorted(Comparator.comparing(ToolCatalog.ToolEntry::name))
             .toList();
@@ -94,7 +94,7 @@ public class PlatformMcpToolSource implements McpToolSource {
             .name(entry.name())
             .description(entry.specification().description())
             .inputSchema(inputSchema(entry.specification()))
-            .annotations(McpToolAnnotationsMapper.toToolAnnotations(((McpPlatformTool) entry.tool()).annotations()))
+            .annotations(McpToolAnnotationsMapper.toToolAnnotations(((McpExposedTool) entry.tool()).annotations()))
             .build();
         return new McpServerFeatures.AsyncToolSpecification(
             tool,

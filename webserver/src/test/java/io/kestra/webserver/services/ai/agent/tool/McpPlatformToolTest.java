@@ -24,7 +24,7 @@ class McpPlatformToolTest {
     List<AiAuthoringTool> authoringTools;
 
     @Test
-    void shouldOptInOnlyThePlatformToolsMeantForMcpClientsWhenCatalogIsBuilt() {
+    void shouldOptInOnlyTheToolsMeantForMcpClientsWhenCatalogIsBuilt() {
         // Given — the docs tools are stubbed so the catalog holds every tool bean without reaching kestra.io
         DocsMcpToolProvider docsMcpToolProvider = mock(DocsMcpToolProvider.class);
         when(docsMcpToolProvider.tools()).thenReturn(Map.of());
@@ -32,7 +32,7 @@ class McpPlatformToolTest {
 
         // When
         List<ToolCatalog.ToolEntry> exposed = catalog.entries().stream()
-            .filter(entry -> entry.tool() instanceof McpPlatformTool)
+            .filter(entry -> entry.tool() instanceof McpExposedTool)
             .toList();
 
         // Then
@@ -44,13 +44,14 @@ class McpPlatformToolTest {
             "execute_flow", "kill_execution", "pause_execution", "change_execution_state", "update_execution_labels",
             "delete_execution", "read_execution_outputs",
             "replay_execution", "resume_execution", "force_run_execution", "change_task_run_state", "backfill_flow",
-            "list_namespaces", "list_namespace_dependencies"
+            "list_namespaces", "list_namespace_dependencies",
+            "author_flow"
         );
         assertThat(exposed).allSatisfy(entry ->
         {
-            McpToolAnnotations annotations = ((McpPlatformTool) entry.tool()).annotations();
+            McpToolAnnotations annotations = ((McpExposedTool) entry.tool()).annotations();
             assertThat(annotations).as("annotations of %s", entry.name()).isNotNull();
-            assertThat(annotations.readOnly()).as("readOnly of %s", entry.name()).isEqualTo(AgentToolFamily.READ == entry.family());
+            assertThat(annotations.readOnly()).as("readOnly of %s", entry.name()).isEqualTo(entry.isAuthoring() || AgentToolFamily.READ == entry.family());
         });
     }
 }
